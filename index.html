@@ -287,7 +287,7 @@
         if (!isCameraRunning) {
           const teacherName = document.getElementById("teacher").value;
           if (teacherName === "未選択") {
-            alert("エラー: 先に先生を選択してください！");
+            alert("エラー: 先にお名前を選択してください！");
             return;
           }
           startCamera();
@@ -307,7 +307,7 @@
       fetch(GAS_WEB_APP_URL)
         .then(res => res.json())
         .then(data => {
-          teacherSelect.innerHTML = '<option value="未選択">-- 先生を選択してください --</option>';
+          teacherSelect.innerHTML = '<option value="未選択">-- お名前を選択してください --</option>';
           if (data.teachers && data.teachers.length > 0) {
             data.teachers.forEach(teacher => {
               const opt = document.createElement("option");
