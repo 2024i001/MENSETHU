@@ -26,7 +26,7 @@
             カメラ(QR)
           </button>
         </div>
-        <p class="text-xs text-slate-500 mt-1">※できる限りQRコードによる名前入力を推奨しています。</p>
+        <p class="text-xs text-slate-500 mt-1">※名前は出来る限りQRコードによる入力を推奨しています。</p>
         <div id="reader" class="mt-3 hidden rounded-lg overflow-hidden border border-slate-300"></div>
       </div>
 
@@ -48,12 +48,15 @@
   </div>
 
   <script>
+    // ★ここにデプロイしたGASのWebアプリURL（/execで終わるURL）を貼り付けてください
+    const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzD94nqiKLyyIUaI2Qkkxh8-50N12sddRF3iugEFedu8-Cw-ZBuuH7kxRYd10M4-jGLDw/exec";
+
     let calendar;
     let html5QrCode = null;
     let isScanning = false;
-    let masterStudentList = []; // スプレッドシートから取得した生徒マスター一覧
+    let masterStudentList = []; // スプレッドシートから取得した生徒マスター
 
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', async function() {
       // 初期日時の設定（1時間後）
       const now = new Date();
       now.setHours(now.getHours() + 1, 0, 0, 0);
@@ -74,29 +77,32 @@
       });
       calendar.render();
 
-      // GASから生徒マスターリスト（A列）を取得
-      if (typeof google !== 'undefined' && google.script && google.script.run) {
-        google.script.run
-          .withSuccessHandler(onMasterLoaded)
-          .withFailureHandler(function(err) {
-            console.error("マスター一覧の取得失敗:", err);
-          })
-          .getStudentMaster();
-      }
+      // GASから生徒マスターリストを取得
+      await fetchStudentMaster();
     });
 
-    // 生徒マスターデータ取得後のドロップダウン設定
-    function onMasterLoaded(list) {
-      if (!list || !Array.isArray(list)) return;
-      masterStudentList = list;
-      
-      const datalist = document.getElementById('studentListOptions');
-      datalist.innerHTML = '';
-      list.forEach(item => {
-        const option = document.createElement('option');
-        option.value = item;
-        datalist.appendChild(option);
-      });
+    // GASから生徒マスター（A列）をロード
+    async function fetchStudentMaster() {
+      if (!GAS_WEB_APP_URL || GAS_WEB_APP_URL.includes("ここに")) return;
+
+      try {
+        const res = await fetch(GAS_WEB_APP_URL);
+        if (res.ok) {
+          const list = await res.json();
+          if (Array.isArray(list)) {
+            masterStudentList = list;
+            const datalist = document.getElementById('studentListOptions');
+            datalist.innerHTML = '';
+            list.forEach(item => {
+              const option = document.createElement('option');
+              option.value = item;
+              datalist.appendChild(option);
+            });
+          }
+        }
+      } catch (err) {
+        console.warn("マスターデータ取得エラー:", err);
+      }
     }
 
     function formatDateForInput(date) {
@@ -150,18 +156,18 @@
       const query = inputText.trim();
       if (!query) return '';
 
-      // 1. 完全一致する場合
+      // 1. 完全一致
       const exactMatch = masterStudentList.find(item => item === query);
       if (exactMatch) return exactMatch;
 
       const clean = (str) => str.replace(/\s+/g, '').toLowerCase();
       const cleanedQuery = clean(query);
 
-      // 2. 空白を無視して一致する場合
+      // 2. 空白を無視して一致
       const spaceIgnoreMatch = masterStudentList.find(item => clean(item) === cleanedQuery);
       if (spaceIgnoreMatch) return spaceIgnoreMatch;
 
-      // 3. 入力した名前から始まる場合（例: "後藤 優宗" → "後藤 優宗24i12"）
+      // 3. 名前から始まる場合（例: "後藤 優宗" → "後藤 優宗24i12"）
       const startsWithMatch = masterStudentList.find(item => clean(item).startsWith(cleanedQuery));
       if (startsWithMatch) return startsWithMatch;
 
@@ -169,12 +175,12 @@
       const includesMatch = masterStudentList.find(item => clean(item).includes(cleanedQuery));
       if (includesMatch) return includesMatch;
 
-      // 該当がマスターにない場合は入力をそのまま返す
+      // マスターになければそのまま返す
       return query;
     }
 
-    // 登録処理
-    function addEvent() {
+    // 登録処理（POST送信）
+    async function addEvent() {
       const rawName = document.getElementById('candidateName').value.trim();
       const dateVal = document.getElementById('interviewDate').value;
 
@@ -183,9 +189,7 @@
         return;
       }
 
-      // 名前をマスター上の「名前+ID」表記に自動補正
       const studentId = resolveStudentId(rawName);
-
       const start = new Date(dateVal.replace('T', ' '));
       const end = new Date(start.getTime() + 60 * 60000);
 
@@ -193,41 +197,40 @@
       submitBtn.disabled = true;
       submitBtn.innerText = "登録中...";
 
-      if (typeof google !== 'undefined' && google.script && google.script.run) {
-        google.script.run
-          .withSuccessHandler(function(response) {
-            submitBtn.disabled = false;
-            submitBtn.innerText = "カレンダー＆スプレッドシートに登録";
-
-            // カレンダーに即時反映
-            calendar.addEvent({
-              title: studentId,
-              start: start,
-              end: end,
-              allDay: false
-            });
-
-            alert(`「${studentId}」さんの面接予約を登録しました！`);
-            document.getElementById('candidateName').value = '';
+      try {
+        // CORSプレフライト回避のため text/plain でJSON文字列を送信
+        const response = await fetch(GAS_WEB_APP_URL, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'text/plain'
+          },
+          body: JSON.stringify({
+            studentId: studentId,
+            dateVal: dateVal
           })
-          .withFailureHandler(function(err) {
-            submitBtn.disabled = false;
-            submitBtn.innerText = "カレンダー＆スプレッドシートに登録";
-            alert('送信エラーが発生しました: ' + err.message);
-          })
-          .saveData(studentId, dateVal);
-      } else {
-        // テスト環境用
-        calendar.addEvent({
-          title: studentId,
-          start: start,
-          end: end,
-          allDay: false
         });
-        alert(`「${studentId}」さんの登録が完了しました。`);
+
+        const result = await response.json();
+
+        if (result.status === 'success') {
+          // カレンダー反映
+          calendar.addEvent({
+            title: result.studentId,
+            start: start,
+            end: end,
+            allDay: false
+          });
+
+          alert(`「${result.studentId}」さんの面接予約を登録しました！`);
+          document.getElementById('candidateName').value = '';
+        } else {
+          alert('登録失敗: ' + (result.message || 'エラーが発生しました。'));
+        }
+      } catch (error) {
+        alert('送信エラーが発生しました。WebアプリURLやネットワークを確認してください。\n' + error.message);
+      } finally {
         submitBtn.disabled = false;
         submitBtn.innerText = "カレンダー＆スプレッドシートに登録";
-        document.getElementById('candidateName').value = '';
       }
     }
   </script>
