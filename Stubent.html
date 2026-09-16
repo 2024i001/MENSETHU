@@ -20,13 +20,13 @@
       <div>
         <label class="block text-sm font-semibold text-slate-700 mb-1">1. 氏名・生徒ID（手入力またはQR）</label>
         <div class="flex gap-2">
-          <input type="text" id="candidateName" list="studentListOptions" placeholder="名前またはIDを入力（例: 後藤 優宗）" class="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <input type="text" id="candidateName" list="studentListOptions" placeholder="名前またはIDを入力" class="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
           <datalist id="studentListOptions"></datalist>
           <button id="scanQrBtn" type="button" onclick="toggleScanner()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-lg transition-colors">
             カメラ(QR)
           </button>
         </div>
-        <p class="text-xs text-slate-500 mt-1">※名前のみを入力した場合でも、自動的にID付きの形式に補正されます。</p>
+        <p class="text-xs text-slate-500 mt-1">※できる限りQRコードによる名前入力を推奨しています。</p>
         <div id="reader" class="mt-3 hidden rounded-lg overflow-hidden border border-slate-300"></div>
       </div>
 
@@ -224,7 +224,7 @@
           end: end,
           allDay: false
         });
-        alert(`【テスト】「${studentId}」さんを登録しました。`);
+        alert(`「${studentId}」さんの登録が完了しました。`);
         submitBtn.disabled = false;
         submitBtn.innerText = "カレンダー＆スプレッドシートに登録";
         document.getElementById('candidateName').value = '';
