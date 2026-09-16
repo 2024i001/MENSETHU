@@ -59,6 +59,11 @@
             box-sizing: border-box;
             color: #334155;
         }
+        .app1-select:disabled {
+            background-color: #f1f5f9;
+            color: #94a3b8;
+            cursor: not-allowed;
+        }
         .scan-btn {
             width: 100%;
             font-size: 1em;
@@ -232,10 +237,18 @@
             <div class="app1-container">
                 <div class="app1-card">
                     <div class="app1-card-title">① 操作・スキャン</div>
+                    <!-- 学科選択ボックス -->
                     <div class="step-box">
-                        <label for="teacher" class="step-label">担当の先生を選択してください</label>
-                        <select id="teacher" class="app1-select">
+                        <label for="department" class="step-label">1. 学科を選択してください</label>
+                        <select id="department" class="app1-select">
                             <option value="未選択">読み込み中...</option>
+                        </select>
+                    </div>
+                    <!-- 先生選択ボックス（初期状態はdisabled） -->
+                    <div class="step-box">
+                        <label for="teacher" class="step-label">2. 担当の先生を選択してください</label>
+                        <select id="teacher" class="app1-select" disabled>
+                            <option value="未選択">-- 学科を先に選択してください --</option>
                         </select>
                     </div>
                     <button id="startBtn" class="scan-btn">QRコードを読み取る</button>
@@ -245,7 +258,7 @@
                 
                 <div class="app1-card">
                     <div class="app1-card-title">② 読み取り結果</div>
-                    <div id="result">面接練習の担当先生(先生自身の名前)を選択し、「QRコードを読み取る」ボタンを押してください</div>
+                    <div id="result">学科および面接練習の担当先生(先生自身の名前)を選択し、「QRコードを読み取る」ボタンを押してください</div>
                 </div>
             </div>
 
@@ -288,9 +301,37 @@
         window.addEventListener('DOMContentLoaded', () => {
             // アプリ1 初期化
             loadTeachers(); 
+
+            // 学科選択時の連動処理
+            document.getElementById("department").addEventListener("change", function() {
+                const selectedDept = this.value;
+                const teacherSelect = document.getElementById("teacher");
+                teacherSelect.innerHTML = "";
+
+                if (selectedDept === "未選択" || !teacherDataMap[selectedDept]) {
+                    teacherSelect.innerHTML = '<option value="未選択">-- 学科を先に選択してください --</option>';
+                    teacherSelect.disabled = true;
+                } else {
+                    teacherSelect.innerHTML = '<option value="未選択">-- 先生を選択してください --</option>';
+                    teacherDataMap[selectedDept].forEach(teacher => {
+                        const opt = document.createElement("option");
+                        opt.value = teacher;
+                        opt.textContent = teacher;
+                        teacherSelect.appendChild(opt);
+                    });
+                    teacherSelect.disabled = false;
+                }
+            });
+
             document.getElementById("startBtn").addEventListener("click", () => {
                 if (!isCameraRunning) {
+                    const dept = document.getElementById("department").value;
                     const teacherName = document.getElementById("teacher").value;
+
+                    if (dept === "未選択") {
+                        alert("エラー: 先に学科を選択してください！");
+                        return;
+                    }
                     if (teacherName === "未選択") {
                         alert("エラー: 先にお名前を選択してください！");
                         return;
@@ -319,26 +360,33 @@
         let video = document.createElement("video");
         let isCameraRunning = false;
         let animationFrameId = null;
+        let teacherDataMap = {}; // 学科別の先生データを保持するオブジェクト
 
         function loadTeachers() {
+            const deptSelect = document.getElementById("department");
             const teacherSelect = document.getElementById("teacher");
+
             fetch(GAS_WEB_APP_URL)
                 .then(res => res.json())
                 .then(data => {
-                    teacherSelect.innerHTML = '<option value="未選択">-- お名前を選択してください --</option>';
-                    if (data.teachers && data.teachers.length > 0) {
-                        data.teachers.forEach(teacher => {
+                    deptSelect.innerHTML = '<option value="未選択">-- 学科を選択してください --</option>';
+                    teacherSelect.innerHTML = '<option value="未選択">-- 学科を先に選択してください --</option>';
+                    teacherSelect.disabled = true;
+
+                    if (data.teacherMap && Object.keys(data.teacherMap).length > 0) {
+                        teacherDataMap = data.teacherMap;
+                        Object.keys(data.teacherMap).forEach(dept => {
                             const opt = document.createElement("option");
-                            opt.value = teacher;
-                            opt.textContent = teacher;
-                            teacherSelect.appendChild(opt);
+                            opt.value = dept;
+                            opt.textContent = dept;
+                            deptSelect.appendChild(opt);
                         });
                     } else {
-                        teacherSelect.innerHTML = '<option value="未選択">先生マスターが空っぽです</option>';
+                        deptSelect.innerHTML = '<option value="未選択">先生マスターが空っぽです</option>';
                     }
                 })
                 .catch(err => {
-                    teacherSelect.innerHTML = '<option value="未選択">先生リストの取得に失敗しました</option>';
+                    deptSelect.innerHTML = '<option value="未選択">学科リストの取得に失敗しました</option>';
                     console.error(err);
                 });
         }
@@ -458,7 +506,7 @@
             
             setTimeout(() => {
                 if(outputData.className !== "success-alert" && outputData.className !== "error-alert") {
-                    outputData.innerText = "担当先生を選択し、「QRコードを読み取る」ボタンを押してください";
+                    outputData.innerText = "学科および担当先生を選択し、「QRコードを読み取る」ボタンを押してください";
                 }
             }, 4000);
         }
