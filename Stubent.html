@@ -20,7 +20,7 @@
       <div>
         <label class="block text-sm font-semibold text-slate-700 mb-1">1. 氏名・生徒ID（手入力または”QR”）</label>
         <div class="flex gap-2">
-          <input type="text" id="candidateName" list="studentListOptions" placeholder="名前またはIDを入力すると予測変換が出ます。" class="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
+          <input type="text" id="candidateName" list="studentListOptions" placeholder="名前またはIDを入力すると予測変換が出ます。(二桁の出席番号を打つと少し早く見つけることができる)" class="flex-1 px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
           <datalist id="studentListOptions"></datalist>
           <button id="scanQrBtn" type="button" onclick="toggleScanner()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-medium px-4 py-2 rounded-lg transition-colors">
             カメラ(QR)
