@@ -3,251 +3,314 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>生徒面接サポートポータル【先生用】</title>
+    <title>生徒面接回数カウンター【課題研究】</title>
+    <link rel="icon" href="AIKN.png" type="image/png">
+    
+    <!-- 外部ライブラリ (Tailwind CSS / jsQR) -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- QRコード生成ライブラリ (生徒提示用) -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
+
     <style>
-        @keyframes slideDown {
-            from { transform: translateY(-20px); opacity: 0; }
-            to { transform: translateY(0); opacity: 1; }
+        /* タブ非表示クラス */
+        .tab-content.hidden { display: none; }
+
+        /* ========================================
+           アプリ1用 スタイル
+        ======================================== */
+        .app1-container {
+            display: flex;
+            gap: 20px;
+            max-width: 1000px;
+            width: 100%;
+            margin: 0 auto;
+            justify-content: center;
+            align-items: flex-start;
         }
-        .animate-slide-down {
-            animation: slideDown 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+        .app1-card {
+            background: #ffffff;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.08);
+            padding: 20px;
+            flex: 1;
+            min-width: 300px;
+            box-sizing: border-box;
+            border: 1px solid #f1f5f9;
         }
+        .app1-card-title {
+            font-size: 1.1em;
+            font-weight: bold;
+            color: #1e293b;
+            margin-top: 0;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #f1f5f9;
+            text-align: left;
+        }
+        .step-box { text-align: left; margin-bottom: 16px; }
+        .step-label { display: block; font-weight: bold; font-size: 0.95em; color: #334155; margin-bottom: 6px; }
+        .app1-select {
+            width: 100%;
+            font-size: 1em;
+            padding: 8px 12px;
+            border-radius: 6px;
+            border: 1px solid #cbd5e1;
+            background-color: #fff;
+            font-weight: bold;
+            box-sizing: border-box;
+            color: #334155;
+        }
+        .app1-select:disabled {
+            background-color: #f1f5f9;
+            color: #94a3b8;
+            cursor: not-allowed;
+        }
+        .scan-btn {
+            width: 100%;
+            font-size: 1em;
+            padding: 10px 16px;
+            background-color: #2563eb;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 8px;
+            transition: background-color 0.2s;
+        }
+        .scan-btn:hover { background-color: #1d4ed8; }
+        .scan-btn:disabled { background-color: #94a3b8; cursor: not-allowed; }
+        .scan-btn.active-cancel { background-color: #dc2626; }
+        .scan-btn.active-cancel:hover { background-color: #b91c1c; }
+        #canvas {
+            width: 100%;
+            border: 2px solid #f1f5f9;
+            border-radius: 8px;
+            background: #f8fafc;
+            margin-top: 12px;
+        }
+        #loading { text-align: center; padding: 16px; color: #64748b; font-weight: bold; }
+        #result {
+            font-size: 1em;
+            font-weight: bold;
+            color: #334155;
+            margin-top: 12px;
+            padding: 12px;
+            border-radius: 6px;
+            min-height: 40px;
+            background-color: #f0f9ff;
+            border: 1px solid #bae6fd;
+            line-height: 1.5;
+        }
+        #result.success-alert { background-color: #dcfce7; color: #166534; border-color: #86efac; }
+        #result.error-alert { background-color: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+        .secret-trigger {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            width: 12px;
+            height: 12px;
+            background-color: #cbd5e1;
+            border-radius: 50%;
+            cursor: pointer;
+            opacity: 0.3;
+            transition: opacity 0.2s, background-color 0.2s;
+            z-index: 9999;
+        }
+        .secret-trigger:hover { opacity: 0.8; background-color: #94a3b8; }
+
+        /* ========================================
+           アプリ2用 スタイル
+        ======================================== */
+        .app2-page-title {
+            text-align: center;
+            margin-bottom: 20px;
+            font-size: 1.35rem;
+            font-weight: bold;
+            color: #0f172a;
+        }
+        .app2-container { display: flex; gap: 24px; }
+        .app2-left { flex: 1; min-width: 300px; }
+        .app2-right { flex: 1; min-width: 300px; }
+        .sortArea { margin-bottom: 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+        .sortArea select { padding: 5px 10px; font-size: 14px; border: 1px solid #cbd5e1; border-radius: 6px; background-color: #fff; }
+        .sortArea button { padding: 5px 12px; font-size: 14px; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; font-weight: 500; }
+        .sortArea button:hover { background: #e2e8f0; }
+        .app2-table { border-collapse: collapse; width: 100%; font-size: 14px; }
+        .app2-table th, .app2-table td { border: 1px solid #cbd5e1; padding: 8px 10px; }
+        .app2-table th { background: #f8fafc; font-weight: 600; color: #334155; }
+        .student-cell { text-align: center; }
+        .student-link { color: #2563eb; cursor: pointer; text-decoration: underline; font-weight: 500; }
+        .student-link:hover { color: #1d4ed8; }
+        .count-cell { text-align: center; font-weight: 600; }
+        .exam-date-cell { text-align: center; }
         .exam-active { font-weight: bold; color: #0f172a; }
         .exam-finished { font-weight: normal; color: #64748b; }
+        #updateTime { color: #64748b; font-size: 12px; white-space: nowrap; }
+        #historyArea { border: 1px solid #e2e8f0; padding: 12px; min-height: 250px; background: #f8fafc; border-radius: 8px; }
+        #historyArea h2 { margin-top: 0; font-size: 1.1rem; font-weight: bold; margin-bottom: 10px; color: #0f172a; }
+
+        /* レスポンシブ調整 */
+        @media (max-width: 768px) {
+            .app1-container, .app2-container { flex-direction: column; }
+            .app1-card, .app2-left, .app2-right { width: 100%; min-width: 0; }
+        }
     </style>
 </head>
-<body class="bg-slate-100 min-h-screen text-slate-800 font-sans pb-10 flex flex-col">
+<body class="bg-slate-100 min-h-screen text-slate-800 flex flex-col font-sans">
 
-    <!-- 生徒ID予測変換用の共通データリスト -->
-    <datalist id="studentListOptions"></datalist>
-
-    <!-- 送信確認モーダル -->
-    <div id="confirmModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-start justify-center pt-8 sm:pt-16 px-4 transition-all">
-        <div class="bg-white rounded-2xl shadow-2xl border border-slate-100 max-w-md w-full p-6 space-y-5 animate-slide-down">
-            <div class="flex items-center justify-between border-b pb-3 border-slate-100">
-                <h3 class="text-lg font-bold text-slate-800 flex items-center gap-2">
-                    <span>📋</span> 面接記録の確認
-                </h3>
-                <button onclick="closeConfirmModal()" class="text-slate-400 hover:text-slate-600 text-2xl font-bold leading-none">&times;</button>
-            </div>
-            
-            <div class="space-y-3 bg-slate-50 p-4 rounded-xl border border-slate-200 text-sm">
-                <div class="flex justify-between items-center border-b pb-2 border-slate-200">
-                    <span class="text-slate-500 font-medium">学科</span>
-                    <span id="modalDept" class="font-bold text-slate-800"></span>
-                </div>
-                <div class="flex justify-between items-center border-b pb-2 border-slate-200">
-                    <span class="text-slate-500 font-medium">担当の先生</span>
-                    <span id="modalTeacher" class="font-bold text-slate-800"></span>
-                </div>
-                <div class="flex justify-between items-center pt-1">
-                    <span class="text-slate-500 font-medium">生徒氏名 / ID</span>
-                    <span id="modalStudent" class="font-bold text-indigo-700"></span>
-                </div>
-            </div>
-
-            <p class="text-xs text-slate-500 text-center">この生徒の面接練習完了記録をスプレッドシートへ送信します。</p>
-
-            <div class="flex gap-3 pt-1">
-                <button onclick="closeConfirmModal()" class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-3 rounded-xl transition-colors">
-                    修正する
-                </button>
-                <button onclick="executeSubmit()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 rounded-xl shadow-lg shadow-indigo-200 transition-colors">
-                    確定して記録
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- ヘッダー -->
-    <header class="bg-slate-900 text-white py-3 px-4 shadow-md text-center">
-        <h1 class="text-lg font-bold tracking-wide flex items-center justify-center gap-2">
-            <span>🎓 生徒面接サポートポータル【先生用】</span>
+    <!-- 1. コンパクト・スリムヘッダー -->
+    <header class="bg-slate-900 text-white py-2.5 px-4 sm:px-6 shadow-md flex items-center justify-between">
+        <h1 class="text-base sm:text-lg font-bold tracking-wide flex items-center gap-2">
+            <span>生徒面接練習回数カウンター</span>
         </h1>
     </header>
 
-    <main class="max-w-6xl w-full mx-auto p-4 sm:p-6 flex-1">
+    <!-- メイン領域 -->
+    <main class="max-w-7xl w-full mx-auto p-3 sm:p-5 flex-1 flex flex-col">
 
-        <!-- セグメントタブコントロール -->
-        <div class="flex p-1.5 bg-slate-200/80 rounded-xl mb-6 shadow-inner max-w-3xl mx-auto">
-            <button id="tab-btn-summary" onclick="switchTab('summary')" 
-                    class="flex-1 py-2.5 px-3 rounded-lg font-bold text-sm text-indigo-700 bg-white shadow-sm transition-all duration-200 flex items-center justify-center gap-2">
-                <span>📊 面接回数・履歴一覧</span>
-            </button>
-            <button id="tab-btn-record" onclick="switchTab('record')" 
-                    class="flex-1 py-2.5 px-3 rounded-lg font-semibold text-sm text-slate-600 hover:text-slate-900 transition-all duration-200 flex items-center justify-center gap-2">
-                <span>📝 直接面接記録</span>
-            </button>
-            <button id="tab-btn-qrcode" onclick="switchTab('qrcode')" 
-                    class="flex-1 py-2.5 px-3 rounded-lg font-semibold text-sm text-slate-600 hover:text-slate-900 transition-all duration-200 flex items-center justify-center gap-2">
-                <span>📱 承認用QR表示</span>
-            </button>
+        <!-- 2. スリム＆スタイリッシュなセグメントタブコントロール（パネルと隙間なしで接続） -->
+        <div class="flex items-center justify-between flex-wrap gap-2 -mb-px relative z-10">
+            <div class="inline-flex p-1 bg-slate-200/90 rounded-t-xl text-xs sm:text-sm font-medium">
+                <!-- メイン機能：アプリ2 -->
+                <button id="btn-app2" onclick="switchTab('app2')" 
+                        class="px-4 py-1.5 rounded-lg font-semibold text-indigo-700 bg-white shadow-sm transition-all duration-200 flex items-center gap-1.5">
+                    <span>面接回数・履歴一覧</span>
+                    <span class="text-[10px] px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded-full font-bold">一覧表示</span>
+                </button>
+                <!-- サブ機能：アプリ1 -->
+                <button id="btn-app1" onclick="switchTab('app1')" 
+                        class="px-4 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-all duration-200 flex items-center gap-1.5">
+                    <span>QRスキャナー</span>
+                    <span class="text-[10px] px-1.5 py-0.5 bg-slate-100 text-slate-500 rounded-full font-medium">スキャン</span>
+                </button>
+            </div>
         </div>
 
-        <!-- ====================================================
-             TAB 1: 面接回数・履歴一覧
-        ==================================================== -->
-        <div id="panel-summary" class="bg-white p-4 sm:p-6 rounded-2xl shadow-sm border border-slate-200 space-y-6">
-            <div class="flex flex-wrap items-center justify-between gap-3 border-b pb-4 border-slate-100">
-                <div>
-                    <h2 class="text-lg font-bold text-slate-900">面接練習実施状況一覧</h2>
-                    <p class="text-xs text-slate-500">生徒ごとの面接回数と試験日程を確認できます。名前をクリックすると詳細履歴を表示します。</p>
-                </div>
-                <div class="flex items-center gap-2">
-                    <button onclick="refreshData()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition-colors flex items-center gap-1 border border-slate-300">
-                        <span>🔄</span> 最新状態に更新
-                    </button>
-                    <span id="updateTime" class="text-xs text-slate-400">更新中...</span>
-                </div>
-            </div>
+        <!-- 3. 各アプリの表示エリア -->
 
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- 左側：一覧テーブル (2列分) -->
-                <div class="lg:col-span-2 space-y-3">
-                    <div class="flex flex-wrap items-center justify-between gap-2">
-                        <!-- 並び替えコントロール -->
-                        <div class="flex items-center gap-2">
-                            <label class="text-xs font-bold text-slate-600">並び順:</label>
-                            <select id="sortSelect" onchange="renderSummary()" class="text-xs border border-slate-300 rounded-lg px-2.5 py-1.5 bg-white font-medium focus:ring-2 focus:ring-indigo-500">
-                                <option value="id-asc">生徒ID順（昇順）</option>
-                                <option value="id-desc">生徒ID順（降順）</option>
-                                <option value="count-desc">面接回数順（多い順）</option>
-                                <option value="count-asc">面接回数順（少ない順）</option>
-                                <option value="exam-asc">試験日順（近い順）</option>
-                                <option value="exam-desc">試験日順（遠い順）</option>
-                            </select>
-                        </div>
-                        <!-- 検索フィルター -->
-                        <input type="text" id="searchInput" oninput="renderSummary()" placeholder="生徒名・IDで絞り込み..." class="text-xs border border-slate-300 rounded-lg px-3 py-1.5 w-48 focus:ring-2 focus:ring-indigo-500">
+        <!-- ▼▼▼ [アプリ 2: メイン機能] 表示エリア（デフォルト表示） ▼▼▼ -->
+        <div id="panel-app2" class="tab-content bg-white p-4 sm:p-6 rounded-b-xl rounded-tr-xl border border-slate-200 shadow-sm flex-1">
+            <h1 class="app2-page-title">面接練習回数一覧</h1>
+
+            <div class="app2-container">
+                <!-- 左側一覧 -->
+                <div class="app2-left">
+                    <div class="sortArea">
+                        <select id="sortSelect">
+                            <option value="id-asc">生徒ID順（昇順）</option>
+                            <option value="id-desc">生徒ID順（降順）</option>
+                            <option value="count-desc">回数順（多）</option>
+                            <option value="count-asc">回数順（少）</option>
+                            <option value="exam-asc">試験日順（近い順）</option>
+                            <option value="exam-desc">試験日順（遠い順）</option>
+                        </select>
+                        <button onclick="refreshData()">🔄 更新</button>
+                        <span id="updateTime">更新中...</span>
                     </div>
 
-                    <div class="overflow-x-auto border border-slate-200 rounded-xl max-h-[550px]">
-                        <table class="w-full text-left text-sm">
-                            <thead class="bg-slate-50 text-slate-700 font-bold border-b border-slate-200 sticky top-0">
-                                <tr>
-                                    <th class="py-2.5 px-3 text-center w-36">試験日</th>
-                                    <th class="py-2.5 px-3">生徒名 / ID</th>
-                                    <th class="py-2.5 px-3 text-center w-24">面接回数</th>
-                                </tr>
-                            </thead>
-                            <tbody id="summaryBody" class="divide-y divide-slate-100 bg-white">
-                                <tr><td colspan="3" class="py-8 text-center text-slate-400">データを読み込んでいます...</td></tr>
-                            </tbody>
-                        </table>
+                    <table class="app2-table">
+                        <thead>
+                            <tr>
+                                <th>試験日</th>
+                                <th>生徒名 / ID</th>
+                                <th>面接回数</th>
+                            </tr>
+                        </thead>
+                        <tbody id="summaryBody"></tbody>
+                    </table>
+                </div>
+
+                <!-- 右側履歴 -->
+                <div class="app2-right">
+                    <h2>面接履歴</h2>
+                    <div id="historyArea">生徒IDをクリックしてください。</div>
+                </div>
+            </div>
+        </div>
+        <!-- ▲▲▲ [アプリ 2] 表示エリア終了 ▲▲▲ -->
+
+
+        <!-- ▼▼▼ [アプリ 1: サブ機能] 表示エリア（初期状態は非表示） ▼▼▼ -->
+        <div id="panel-app1" class="tab-content hidden bg-white p-4 sm:p-6 rounded-b-xl rounded-tr-xl border border-slate-200 shadow-sm flex-1">
+            <h2 class="text-lg font-bold text-slate-800 mb-4 text-center">面接練習記録用 QRスキャナー</h2>
+            
+            <div class="app1-container">
+                <div class="app1-card">
+                    <div class="app1-card-title">① 操作・スキャン</div>
+                    <!-- 学科選択ボックス -->
+                    <div class="step-box">
+                        <label for="department" class="step-label">1. 学科を選択してください</label>
+                        <select id="department" class="app1-select">
+                            <option value="未選択">読み込み中...</option>
+                        </select>
                     </div>
-                </div>
-
-                <!-- 右側：詳細履歴エリア (1列分) -->
-                <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3 h-fit">
-                    <h3 class="font-bold text-slate-800 text-sm flex items-center gap-1.5 border-b pb-2 border-slate-200">
-                        <span>📜</span> 個別面接履歴
-                    </h3>
-                    <div id="historyArea" class="text-xs text-slate-500 min-h-[200px]">
-                        一覧から生徒の名前をクリックすると、ここに面接実施履歴が表示されます。
+                    <!-- 先生選択ボックス（初期状態はdisabled） -->
+                    <div class="step-box">
+                        <label for="teacher" class="step-label">2. 担当の先生を選択してください</label>
+                        <select id="teacher" class="app1-select" disabled>
+                            <option value="未選択">-- 学科を先に選択してください --</option>
+                        </select>
                     </div>
+                    <button id="startBtn" class="scan-btn">QRコードを読み取る</button>
+                    <div id="loading" hidden>カメラを起動中...</div>
+                    <canvas id="canvas" hidden></canvas>
+                </div>
+                
+                <div class="app1-card">
+                    <div class="app1-card-title">② 読み取り結果</div>
+                    <div id="result">学科および面接練習の担当先生(先生自身の名前)を選択し、「QRコードを読み取る」ボタンを押してください</div>
                 </div>
             </div>
+
+            <div class="secret-trigger" onclick="window.open('', '_blank');"></div>
         </div>
-
-        <!-- ====================================================
-             TAB 2: 直接面接記録 (スキャナー不要の入力フォーム)
-        ==================================================== -->
-        <div id="panel-record" class="hidden max-w-xl mx-auto bg-white p-6 rounded-2xl shadow-sm border border-slate-200 space-y-5">
-            <div>
-                <h2 class="text-lg font-bold text-slate-900 mb-1">面接完了記録（直接登録）</h2>
-                <p class="text-xs text-slate-500">QRコード読み取りを行わず、手動で生徒を指定して面接実施記録を登録します。</p>
-            </div>
-
-            <div class="space-y-4 pt-2">
-                <!-- 学科選択 -->
-                <div>
-                    <label for="department" class="block text-sm font-semibold text-slate-700 mb-1">① 学科を選択してください</label>
-                    <select id="department" class="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white font-medium focus:ring-2 focus:ring-indigo-500">
-                        <option value="未選択">読み込み中...</option>
-                    </select>
-                </div>
-
-                <!-- 先生選択 -->
-                <div>
-                    <label for="teacher" class="block text-sm font-semibold text-slate-700 mb-1">② 担当先生（あなたのお名前）</label>
-                    <select id="teacher" class="w-full px-3 py-2 border border-slate-300 rounded-lg bg-slate-50 font-medium text-slate-500" disabled>
-                        <option value="未選択">-- 先に学科を選択してください --</option>
-                    </select>
-                </div>
-
-                <!-- 生徒ID選択 -->
-                <div>
-                    <label for="studentIdRecord" class="block text-sm font-semibold text-slate-700 mb-1">③ 対象の生徒氏名・ID</label>
-                    <input type="text" id="studentIdRecord" list="studentListOptions" onblur="autoResolveInput('studentIdRecord')" placeholder="名前またはIDを入力（名前の一部でも検索可）" class="w-full px-3 py-2 border border-slate-300 rounded-lg focus:ring-2 focus:ring-indigo-500">
-                    <p class="text-xs text-slate-400 mt-1">※文字を入力すると予測候補が表示されます。</p>
-                </div>
-
-                <!-- 送信実行ボタン -->
-                <div class="pt-2">
-                    <button onclick="handleDirectSubmit()" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-4 rounded-xl shadow-lg shadow-indigo-100 transition-colors flex items-center justify-center gap-2">
-                        <span>✅ 面接完了を記録する</span>
-                    </button>
-                </div>
-
-                <!-- 結果表示エリア -->
-                <div id="recordResult" class="hidden p-4 rounded-xl text-sm font-bold"></div>
-            </div>
-        </div>
-
-        <!-- ====================================================
-             TAB 3: 生徒提示用 承認QRコード表示
-        ==================================================== -->
-        <div id="panel-qrcode" class="hidden max-w-md mx-auto bg-white p-6 rounded-2xl shadow-sm border border-slate-200 text-center space-y-4">
-            <div>
-                <h2 class="text-lg font-bold text-slate-900 mb-1">先生承認用 QRコード</h2>
-                <p class="text-xs text-slate-500">生徒がスマホで面接完了記録を送る際に、このQRコードをカメラで読み取らせてください。</p>
-            </div>
-
-            <div class="p-6 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col items-center justify-center space-y-3">
-                <div id="qrcode" class="p-3 bg-white rounded-xl shadow-md border border-slate-100"></div>
-                <p class="text-xs text-slate-500 font-mono break-all px-2" id="qrTargetUrlText"></p>
-            </div>
-
-            <p class="text-xs text-emerald-700 bg-emerald-50 border border-emerald-200 p-3 rounded-xl font-medium">
-                💡 生徒側のポータル（`Students.html`）の「先生のQRコードを読み取って確認送信」で使用されます。
-            </p>
-        </div>
+        <!-- ▲▲▲ [アプリ 1] 表示エリア終了 ▲▲▲ -->
 
     </main>
 
+    <!-- 4. 各種JavaScript -->
     <script>
-        // ====================================================
-        // 設定エリア
-        // ====================================================
-        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbzTjAqp9fhtXn56ZbB3QLWUrUAife7Jaz6A4xHmnwRamA7d23lo6loiiHMdaeubz8bP/exec";
-        
-        // 生徒がスキャンするターゲットURL（Students.htmlと合致させる）
-        const TEACHER_QR_TARGET = "https://2024i001.github.io/Application2026/SYZH.html";
+        /* ===================================================
+           タブ切り替え機能（アプリ2をメインとして処理）
+        =================================================== */
+        function switchTab(targetApp) {
+            const btnApp1 = document.getElementById('btn-app1');
+            const btnApp2 = document.getElementById('btn-app2');
+            const panelApp1 = document.getElementById('panel-app1');
+            const panelApp2 = document.getElementById('panel-app2');
 
-        let masterStudentList = [];
-        let teacherDataMap = {};
-        let studentsData = [];
-        let pendingSubmission = null;
+            const activeClass = "px-4 py-1.5 rounded-lg font-semibold text-indigo-700 bg-white shadow-sm transition-all duration-200 flex items-center gap-1.5";
+            const inactiveClass = "px-4 py-1.5 rounded-lg text-slate-600 hover:text-slate-900 transition-all duration-200 flex items-center gap-1.5";
 
-        document.addEventListener('DOMContentLoaded', () => {
-            loadTeachers();
-            fetchStudentMaster();
-            loadSummary();
-            initQRCode();
+            if (targetApp === 'app2') {
+                panelApp2.classList.remove('hidden');
+                panelApp1.classList.add('hidden');
+                btnApp2.className = activeClass;
+                btnApp1.className = inactiveClass;
+            } else if (targetApp === 'app1') {
+                panelApp1.classList.remove('hidden');
+                panelApp2.classList.add('hidden');
+                btnApp1.className = activeClass;
+                btnApp2.className = inactiveClass;
+            }
+        }
 
-            // 学科選択連動
+        /* ===================================================
+           DOMContentLoaded（全体初期ロード）
+        =================================================== */
+        window.addEventListener('DOMContentLoaded', () => {
+            // アプリ1 初期化
+            loadTeachers(); 
+
+            // 学科選択時の連動処理
             document.getElementById("department").addEventListener("change", function() {
                 const selectedDept = this.value;
                 const teacherSelect = document.getElementById("teacher");
                 teacherSelect.innerHTML = "";
 
                 if (selectedDept === "未選択" || !teacherDataMap[selectedDept]) {
-                    teacherSelect.innerHTML = '<option value="未選択">-- 先に学科を選択してください --</option>';
+                    teacherSelect.innerHTML = '<option value="未選択">-- 学科を先に選択してください --</option>';
                     teacherSelect.disabled = true;
-                    teacherSelect.className = "w-full px-3 py-2 border border-slate-300 rounded-lg bg-slate-50 font-medium text-slate-500";
                 } else {
                     teacherSelect.innerHTML = '<option value="未選択">-- 先生を選択してください --</option>';
                     teacherDataMap[selectedDept].forEach(teacher => {
@@ -257,90 +320,59 @@
                         teacherSelect.appendChild(opt);
                     });
                     teacherSelect.disabled = false;
-                    teacherSelect.className = "w-full px-3 py-2 border border-slate-300 rounded-lg bg-white font-medium focus:ring-2 focus:ring-indigo-500";
                 }
+            });
+
+            document.getElementById("startBtn").addEventListener("click", () => {
+                if (!isCameraRunning) {
+                    const dept = document.getElementById("department").value;
+                    const teacherName = document.getElementById("teacher").value;
+
+                    if (dept === "未選択") {
+                        alert("エラー: 先に学科を選択してください！");
+                        return;
+                    }
+                    if (teacherName === "未選択") {
+                        alert("エラー: 先にお名前を選択してください！");
+                        return;
+                    }
+                    startCamera();
+                } else {
+                    const outputData = document.getElementById("result");
+                    outputData.innerText = "カメラの起動をキャンセルしました。";
+                    outputData.className = "";
+                    stopCamera();
+                }
+            });
+
+            // アプリ2 初期化
+            loadSummary();
+            document.getElementById("sortSelect").addEventListener("change", function(){
+                renderSummary();
             });
         });
 
-        // ----------------------------------------------------
-        // 生徒提示用QRコード生成
-        // ----------------------------------------------------
-        function initQRCode() {
-            document.getElementById("qrTargetUrlText").textContent = TEACHER_QR_TARGET;
-            const qrContainer = document.getElementById("qrcode");
-            qrContainer.innerHTML = "";
-            new QRCode(qrContainer, {
-                text: TEACHER_QR_TARGET,
-                width: 200,
-                height: 200,
-                colorDark : "#0f172a",
-                colorLight : "#ffffff",
-                correctLevel : QRCode.CorrectLevel.H
-            });
-        }
+        /* ===================================================
+           アプリ 1 のロジック
+        =================================================== */
+        const GAS_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyshubu1o0ZSVU6GqBEdsPeiB_al0psmVNAwybrWZ9ycwtQcDzQc3XERdVI9ToNtD46fQ/exec";
+        let localStream = null; 
+        let video = document.createElement("video");
+        let isCameraRunning = false;
+        let animationFrameId = null;
+        let teacherDataMap = {}; // 学科別の先生データを保持するオブジェクト
 
-        // ----------------------------------------------------
-        // 生徒マスター＆補正ロジック
-        // ----------------------------------------------------
-        async function fetchStudentMaster() {
-            try {
-                const res = await fetch(GAS_WEB_APP_URL + "?mode=students");
-                if (res.ok) {
-                    const list = await res.json();
-                    if (Array.isArray(list)) {
-                        masterStudentList = list;
-                        const datalist = document.getElementById('studentListOptions');
-                        datalist.innerHTML = '';
-                        list.forEach(item => {
-                            const option = document.createElement('option');
-                            option.value = item;
-                            datalist.appendChild(option);
-                        });
-                    }
-                }
-            } catch (err) {
-                console.warn("生徒マスター取得エラー:", err);
-            }
-        }
-
-        function resolveStudentId(inputText) {
-            const query = inputText.trim();
-            if (!query) return '';
-
-            const exactMatch = masterStudentList.find(item => item === query);
-            if (exactMatch) return exactMatch;
-
-            const clean = (str) => str.replace(/\s+/g, '').toLowerCase();
-            const cleanedQuery = clean(query);
-
-            const spaceIgnoreMatch = masterStudentList.find(item => clean(item) === cleanedQuery);
-            if (spaceIgnoreMatch) return spaceIgnoreMatch;
-
-            const startsWithMatch = masterStudentList.find(item => clean(item).startsWith(cleanedQuery));
-            if (startsWithMatch) return startsWithMatch;
-
-            const includesMatch = masterStudentList.find(item => clean(item).includes(cleanedQuery));
-            if (includesMatch) return includesMatch;
-
-            return query;
-        }
-
-        function autoResolveInput(elementId) {
-            const inputEl = document.getElementById(elementId);
-            if (inputEl && inputEl.value.trim()) {
-                inputEl.value = resolveStudentId(inputEl.value);
-            }
-        }
-
-        // ----------------------------------------------------
-        // 先生データ読み込み
-        // ----------------------------------------------------
         function loadTeachers() {
             const deptSelect = document.getElementById("department");
-            fetch(GAS_WEB_APP_URL + "?mode=teachers")
+            const teacherSelect = document.getElementById("teacher");
+
+            fetch(GAS_WEB_APP_URL)
                 .then(res => res.json())
                 .then(data => {
                     deptSelect.innerHTML = '<option value="未選択">-- 学科を選択してください --</option>';
+                    teacherSelect.innerHTML = '<option value="未選択">-- 学科を先に選択してください --</option>';
+                    teacherSelect.disabled = true;
+
                     if (data.teacherMap && Object.keys(data.teacherMap).length > 0) {
                         teacherDataMap = data.teacherMap;
                         Object.keys(data.teacherMap).forEach(dept => {
@@ -349,237 +381,285 @@
                             opt.textContent = dept;
                             deptSelect.appendChild(opt);
                         });
+                    } else {
+                        deptSelect.innerHTML = '<option value="未選択">先生マスターが空っぽです</option>';
                     }
                 })
-                .catch(err => console.error("先生リスト取得失敗:", err));
+                .catch(err => {
+                    deptSelect.innerHTML = '<option value="未選択">学科リストの取得に失敗しました</option>';
+                    console.error(err);
+                });
         }
 
-        // ----------------------------------------------------
-        // タブ切り替え
-        // ----------------------------------------------------
-        function switchTab(target) {
-            const btnSummary = document.getElementById('tab-btn-summary');
-            const btnRecord = document.getElementById('tab-btn-record');
-            const btnQrcode = document.getElementById('tab-btn-qrcode');
+        function startCamera() {
+            const canvasElement = document.getElementById("canvas");
+            const canvas = canvasElement.getContext("2d", { willReadFrequently: true });
+            const loadingMessage = document.getElementById("loading");
+            const outputData = document.getElementById("result");
+            const startBtn = document.getElementById("startBtn");
+            let isProcessing = false; 
 
-            const panelSummary = document.getElementById('panel-summary');
-            const panelRecord = document.getElementById('panel-record');
-            const panelQrcode = document.getElementById('panel-qrcode');
+            loadingMessage.hidden = false;
+            startBtn.innerText = "カメラを切る";
+            startBtn.classList.add("active-cancel");
+            isCameraRunning = true;
 
-            const activeClass = "flex-1 py-2.5 px-3 rounded-lg font-bold text-sm text-indigo-700 bg-white shadow-sm transition-all duration-200 flex items-center justify-center gap-2";
-            const inactiveClass = "flex-1 py-2.5 px-3 rounded-lg font-semibold text-sm text-slate-600 hover:text-slate-900 transition-all duration-200 flex items-center justify-center gap-2";
+            outputData.innerText = "カメラを起動しています...";
+            outputData.className = "";
 
-            panelSummary.classList.add('hidden');
-            panelRecord.classList.add('hidden');
-            panelQrcode.classList.add('hidden');
-
-            btnSummary.className = inactiveClass;
-            btnRecord.className = inactiveClass;
-            btnQrcode.className = inactiveClass;
-
-            if (target === 'summary') {
-                panelSummary.classList.remove('hidden');
-                btnSummary.className = activeClass;
-                loadSummary();
-            } else if (target === 'record') {
-                panelRecord.classList.remove('hidden');
-                btnRecord.className = activeClass;
-            } else if (target === 'qrcode') {
-                panelQrcode.classList.remove('hidden');
-                btnQrcode.className = activeClass;
-            }
-        }
-
-        // ----------------------------------------------------
-        // 直接面接記録処理
-        // ----------------------------------------------------
-        function handleDirectSubmit() {
-            const dept = document.getElementById("department").value;
-            const teacherName = document.getElementById("teacher").value;
-            const rawStudentId = document.getElementById("studentIdRecord").value.trim();
-
-            if (dept === "未選択" || teacherName === "未選択") {
-                alert("学科と担当の先生を選択してください。");
-                return;
-            }
-            if (!rawStudentId) {
-                alert("生徒氏名またはIDを入力してください。");
-                return;
-            }
-
-            const resolvedStudent = resolveStudentId(rawStudentId);
-            document.getElementById("studentIdRecord").value = resolvedStudent;
-
-            pendingSubmission = { dept, teacherName, studentId: resolvedStudent };
-
-            document.getElementById('modalDept').textContent = dept;
-            document.getElementById('modalTeacher').textContent = teacherName + " 先生";
-            document.getElementById('modalStudent').textContent = resolvedStudent;
-            document.getElementById('confirmModal').classList.remove('hidden');
-        }
-
-        function closeConfirmModal() {
-            document.getElementById('confirmModal').classList.add('hidden');
-            pendingSubmission = null;
-        }
-
-        function executeSubmit() {
-            if (!pendingSubmission) return;
-            const { teacherName, studentId } = pendingSubmission;
-            closeConfirmModal();
-
-            const resultDiv = document.getElementById("recordResult");
-            resultDiv.className = "p-4 rounded-xl text-sm font-bold bg-blue-50 text-blue-700 border border-blue-200 mt-3";
-            resultDiv.innerText = "記録を送信中...";
-            resultDiv.classList.remove("hidden");
-
-            fetch(GAS_WEB_APP_URL, {
-                method: "POST",
-                headers: { "Content-Type": "text/plain" },
-                body: JSON.stringify({ action: "recordLog", teacherName: teacherName, studentId: studentId })
-            })
-            .then(res => res.json())
-            .then(res => {
-                if (res.status === "Success") {
-                    resultDiv.className = "p-4 rounded-xl text-sm font-bold bg-green-50 text-green-800 border border-green-300 mt-3";
-                    resultDiv.innerHTML = `✅ 記録完了！<br>生徒: ${res.name} / 担当: ${teacherName}先生`;
-                    document.getElementById("studentIdRecord").value = "";
-                } else {
-                    resultDiv.className = "p-4 rounded-xl text-sm font-bold bg-red-50 text-red-800 border border-red-300 mt-3";
-                    resultDiv.innerText = "エラー: " + res.message;
-                }
-            })
-            .catch(err => {
-                resultDiv.className = "p-4 rounded-xl text-sm font-bold bg-red-50 text-red-800 border border-red-300 mt-3";
-                resultDiv.innerText = "通信エラー: " + err.message;
+            navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } }).then(function(stream) {
+                localStream = stream; 
+                video.srcObject = stream;
+                video.setAttribute("playsinline", true);
+                video.play();
+                animationFrameId = requestAnimationFrame(tick);
+            }).catch(function(err) {
+                outputData.innerText = "カメラが起動できません: " + err.message;
+                outputData.className = "error-alert";
+                resetButtonState();
+                loadingMessage.hidden = true;
             });
+
+            function tick() {
+                if (!isCameraRunning) return;
+
+                if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                    if (loadingMessage) loadingMessage.hidden = true;
+                    canvasElement.hidden = false;
+
+                    canvasElement.height = video.videoHeight;
+                    canvasElement.width = video.videoWidth;
+                    canvas.drawImage(video, 0, 0, canvasElement.width, canvasElement.height);
+                    
+                    var imageData = canvas.getImageData(0, 0, canvasElement.width, canvasElement.height);
+                    var code = jsQR(imageData.data, imageData.width, imageData.height, { inversionAttempts: "dontInvert" });
+                    
+                    if (code && !isProcessing) {
+                        isProcessing = true; 
+                        const teacherName = document.getElementById("teacher").value;
+
+                        const confirmRecord = confirm(
+                            "QRコードを検出しました。\n\n" +
+                            "【担当先生】: " + teacherName + "\n" +
+                            "【対象生徒ID】: " + code.data + "\n\n" +
+                            "この内容で記録を送信しますか？"
+                        );
+
+                        if (!confirmRecord) {
+                            outputData.innerText = "キャンセルされました。再度QRコードをかざしてください。";
+                            setTimeout(() => {
+                                isProcessing = false;
+                                if (isCameraRunning) {
+                                    animationFrameId = requestAnimationFrame(tick);
+                                }
+                            }, 1500);
+                            return;
+                        }
+
+                        outputData.innerText = "記録中...";
+                        outputData.className = "";
+
+                        fetch(GAS_WEB_APP_URL, {
+                            method: "POST",
+                            body: JSON.stringify({ teacherName: teacherName, studentId: code.data }),
+                            headers: { "Content-Type": "text/plain" }
+                        })
+                        .then(res => res.json())
+                        .then(response => {
+                            if (response.status === "Success") {
+                                outputData.innerHTML = "処理結果: 記録完了！<br><span style='font-size:1.3em; color:#166534; display:block; margin-top:8px;'>" + response.name + " さん</span>";
+                                outputData.className = "success-alert";
+                            } else {
+                                outputData.innerText = "エラー: " + response.message;
+                                outputData.className = "error-alert";
+                            }
+                            stopCamera();
+                        })
+                        .catch(err => {
+                            outputData.innerText = "通信エラー発生: " + err.message;
+                            outputData.className = "error-alert";
+                            stopCamera();
+                        });
+                        return;
+                    }
+                }
+                if (!isProcessing && isCameraRunning) {
+                    animationFrameId = requestAnimationFrame(tick);
+                }
+            }
         }
 
-        // ----------------------------------------------------
-        // 面接回数・履歴一覧ロジック
-        // ----------------------------------------------------
-        async function loadSummary() {
+        function stopCamera() {
+            isCameraRunning = false;
+            if (animationFrameId) cancelAnimationFrame(animationFrameId);
+            if (localStream) {
+                localStream.getTracks().forEach(track => track.stop()); 
+                localStream = null;
+            }
+            const canvasElement = document.getElementById("canvas");
+            const loadingMessage = document.getElementById("loading");
+            const outputData = document.getElementById("result");
+
+            canvasElement.hidden = true;
+            loadingMessage.hidden = true;
+            resetButtonState();
+            
+            setTimeout(() => {
+                if(outputData.className !== "success-alert" && outputData.className !== "error-alert") {
+                    outputData.innerText = "学科および担当先生を選択し、「QRコードを読み取る」ボタンを押してください";
+                }
+            }, 4000);
+        }
+
+        function resetButtonState() {
+            const startBtn = document.getElementById("startBtn");
+            startBtn.innerText = "QRコードを読み取る";
+            startBtn.classList.remove("active-cancel");
+            startBtn.disabled = false;
+            isCameraRunning = false;
+        }
+
+        /* ===================================================
+           アプリ 2 のロジック
+        =================================================== */
+        const GAS_URL = "https://script.google.com/macros/s/AKfycbxYvNAx8TWTezWFp9V7G2UeXYkHGehDVWDdweIhdAnLaeqfzRhbpU8CONMt7CV45tj4/exec";
+        let students = [];
+
+        async function loadSummary(){
             try {
-                const summaryRes = await fetch(GAS_WEB_APP_URL + "?mode=summary");
-                const summaryData = await summaryRes.json();
+                const summaryResponse = await fetch(GAS_URL + "?mode=summary");
+                const summaryData = await summaryResponse.json();
 
-                const examRes = await fetch(GAS_WEB_APP_URL + "?mode=examDates");
-                const examData = await examRes.json();
+                const examResponse = await fetch(GAS_URL + "?mode=examDates");
+                const examData = await examResponse.json();
 
-                studentsData = [];
+                students = [];
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
 
-                for (const studentName in summaryData) {
+                for(const studentName in summaryData){
                     const match = studentName.match(/\d+[a-zA-Z]\d+/);
-                    const studentId = match ? match[0] : studentName;
-                    const displayName = studentName.replace(studentId, "").trim() || studentName;
+                    if(!match) continue;
 
-                    const examList = (examData[studentId] || []).filter(d => d && String(d).trim() !== "");
+                    const studentId = match[0];
+                    const displayName = studentName.replace(studentId, "").trim();
 
-                    const parsedExamDates = examList.map((dateText, idx) => {
+                    const examList = (examData[studentId] || []).filter(function(dateText){
+                        return (dateText !== null && dateText !== undefined && String(dateText).trim() !== "");
+                    });
+
+                    const parsedExamDates = examList.map(function(dateText, index){
                         const parts = String(dateText).split("/");
-                        if (parts.length !== 3) {
-                            return { text: dateText, date: null, daysUntil: null, originalIndex: idx };
+                        if(parts.length !== 3){
+                            return { text: dateText, date: null, daysUntil: null, originalIndex: index };
                         }
-                        const y = Number(parts[0]), m = Number(parts[1]), d = Number(parts[2]);
-                        const examDate = new Date(y, m - 1, d);
+                        const year = Number(parts[0]);
+                        const month = Number(parts[1]);
+                        const day = Number(parts[2]);
+                        const examDate = new Date(year, month - 1, day);
                         examDate.setHours(0, 0, 0, 0);
-                        const daysUntil = Math.floor((examDate - today) / (1000 * 60 * 60 * 24));
+
+                        const diff = examDate - today;
+                        const daysUntil = Math.floor(diff / (1000 * 60 * 60 * 24));
 
                         return {
-                            text: `${y}/${String(m).padStart(2, "0")}/${String(d).padStart(2, "0")}`,
+                            text: year + "/" + String(month).padStart(2,"0") + "/" + String(day).padStart(2,"0"),
                             date: examDate,
                             daysUntil: daysUntil,
-                            originalIndex: idx
+                            originalIndex: index
                         };
                     });
 
-                    studentsData.push({
-                        fullName: studentName,
+                    const unfinishedDates = parsedExamDates.filter(item => item.daysUntil !== null && item.daysUntil >= 0);
+                    const nearestDateList = [...unfinishedDates].sort((a,b) => a.daysUntil - b.daysUntil);
+                    const farthestDateList = [...unfinishedDates].sort((a,b) => b.daysUntil - a.daysUntil);
+
+                    students.push({
                         name: displayName,
                         id: studentId,
                         count: Number(summaryData[studentName]) || 0,
-                        examDates: parsedExamDates
+                        examDates: parsedExamDates,
+                        nearestDateList: nearestDateList,
+                        farthestDateList: farthestDateList
                     });
                 }
 
                 renderSummary();
-                document.getElementById("updateTime").textContent = "最終更新: " + new Date().toLocaleTimeString("ja-JP");
-            } catch (err) {
-                console.error("集計データ読み込みエラー:", err);
-                document.getElementById("summaryBody").innerHTML = `<tr><td colspan="3" class="py-6 text-center text-red-500">データ取得に失敗しました。</td></tr>`;
+                const now = new Date();
+                document.getElementById("updateTime").textContent = "最終更新：" + now.toLocaleString("ja-JP");
+            } catch(error) {
+                console.error(error);
+                document.getElementById("summaryBody").innerHTML = "<tr><td colspan='3'>データの取得に失敗しました。</td></tr>";
             }
         }
 
-        function renderSummary() {
+        function renderSummary(){
             const sortType = document.getElementById("sortSelect").value;
-            const filterKeyword = document.getElementById("searchInput").value.trim().toLowerCase();
             const tbody = document.getElementById("summaryBody");
             tbody.innerHTML = "";
 
-            let filtered = studentsData.filter(s => 
-                s.fullName.toLowerCase().includes(filterKeyword) || s.id.toLowerCase().includes(filterKeyword)
-            );
-
-            if (filtered.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="3" class="py-6 text-center text-slate-400">該当する生徒が見つかりません。</td></tr>`;
+            if(sortType === "exam-asc" || sortType === "exam-desc"){
+                renderExamRows(sortType, tbody);
                 return;
             }
 
-            // ソート処理
-            if (sortType === "id-asc") {
-                filtered.sort((a, b) => compareId(a.id, b.id));
-            } else if (sortType === "id-desc") {
-                filtered.sort((a, b) => compareId(b.id, a.id));
-            } else if (sortType === "count-desc") {
-                filtered.sort((a, b) => b.count - a.count || compareId(a.id, b.id));
-            } else if (sortType === "count-asc") {
-                filtered.sort((a, b) => a.count - b.count || compareId(a.id, b.id));
-            } else if (sortType === "exam-asc" || sortType === "exam-desc") {
-                filtered.sort((a, b) => {
-                    const dateA = a.examDates[0]?.date ? a.examDates[0].date.getTime() : 9999999999999;
-                    const dateB = b.examDates[0]?.date ? b.examDates[0].date.getTime() : 9999999999999;
-                    return sortType === "exam-asc" ? dateA - dateB : dateB - dateA;
-                });
+            let sortedStudents = [...students];
+
+            if(sortType === "id-asc"){
+                sortedStudents.sort((a,b) => compareId(a.id, b.id));
+            } else if(sortType === "id-desc"){
+                sortedStudents.sort((a,b) => compareId(b.id, a.id));
+            } else if(sortType === "count-desc"){
+                sortedStudents.sort((a,b) => b.count !== a.count ? b.count - a.count : compareId(a.id, b.id));
+            } else if(sortType === "count-asc"){
+                sortedStudents.sort((a,b) => a.count !== b.count ? a.count - b.count : compareId(a.id, b.id));
             }
 
-            filtered.forEach(student => {
+            sortedStudents.forEach(function(student){
                 const tr = document.createElement("tr");
-                tr.className = "hover:bg-slate-50 transition-colors border-b border-slate-100";
-
-                // 試験日列
                 const examTd = document.createElement("td");
-                examTd.className = "py-2.5 px-3 text-center text-xs";
-                if (student.examDates.length === 0) {
-                    examTd.innerHTML = `<span class="text-slate-400">未設定</span>`;
+                examTd.className = "exam-date-cell";
+
+                if(student.examDates.length === 0){
+                    examTd.textContent = "未設定";
                 } else {
-                    student.examDates.forEach(exam => {
+                    const activeDates = student.examDates.filter(exam => exam.daysUntil === null || exam.daysUntil >= 0);
+                    const finishedDates = student.examDates
+                        .filter(exam => exam.daysUntil !== null && exam.daysUntil < 0)
+                        .sort((a,b) => {
+                            if(a.date === null && b.date === null) return a.originalIndex - b.originalIndex;
+                            if(a.date === null) return 1;
+                            if(b.date === null) return -1;
+                            return a.date - b.date;
+                        });
+
+                    const displayExamDates = [...activeDates, ...finishedDates];
+                    displayExamDates.forEach(function(exam){
                         const div = document.createElement("div");
-                        if (exam.daysUntil !== null && exam.daysUntil < 0) {
+                        if(exam.daysUntil !== null && exam.daysUntil < 0){
                             div.className = "exam-finished";
-                            div.innerHTML = `${exam.text} <span class="text-emerald-600">✓</span>`;
+                            div.textContent = exam.text + " ✅";
                         } else {
-                            div.className = "exam-active font-semibold text-slate-700";
+                            div.className = "exam-active";
                             div.textContent = exam.text;
                         }
                         examTd.appendChild(div);
                     });
                 }
 
-                // 生徒名列
                 const nameTd = document.createElement("td");
-                nameTd.className = "py-2.5 px-3 font-medium";
-                nameTd.innerHTML = `
-                    <button onclick="showHistory('${student.id}', '${student.fullName}')" class="text-indigo-600 hover:text-indigo-800 hover:underline font-bold text-left">
-                        ${student.name} <span class="text-xs text-slate-500 font-normal">(${student.id})</span>
-                    </button>
-                `;
+                nameTd.className = "student-cell";
+                const studentLink = document.createElement("span");
+                studentLink.className = "student-link";
+                studentLink.textContent = student.name + " " + student.id;
+                studentLink.onclick = function(){
+                    showHistory(student.id, student.name + " " + student.id);
+                };
+                nameTd.appendChild(studentLink);
 
-                // 回数手列
                 const countTd = document.createElement("td");
-                countTd.className = "py-2.5 px-3 text-center font-bold";
-                countTd.innerHTML = `<span class="inline-block px-2 py-0.5 bg-indigo-50 text-indigo-700 rounded-full text-xs">${student.count} 回</span>`;
+                countTd.className = "count-cell";
+                countTd.textContent = student.count + "回";
 
                 tr.appendChild(examTd);
                 tr.appendChild(nameTd);
@@ -588,67 +668,169 @@
             });
         }
 
-        function compareId(a, b) {
-            const matchA = String(a).match(/(\d+)[a-zA-Z](\d+)/);
-            const matchB = String(b).match(/(\d+)[a-zA-Z](\d+)/);
-            if (!matchA || !matchB) return String(a).localeCompare(String(b), "ja");
+        function renderExamRows(sortType, tbody){
+            let rows = [];
 
-            if (matchA[1] !== matchB[1]) return Number(matchA[1]) - Number(matchB[1]);
-            return Number(matchA[2]) - Number(matchB[2]);
+            students.forEach(function(student){
+                if(student.examDates.length === 0){
+                    rows.push({ student: student, exam: null });
+                    return;
+                }
+                student.examDates.forEach(function(exam){
+                    rows.push({ student: student, exam: exam });
+                });
+            });
+
+            if(sortType === "exam-asc"){
+                rows.sort(function(a,b){
+                    if(a.exam === null && b.exam === null) return compareId(a.student.id, b.student.id);
+                    if(a.exam === null) return 1;
+                    if(b.exam === null) return -1;
+                    if(a.exam.date === null && b.exam.date === null) return a.exam.originalIndex - b.exam.originalIndex;
+                    if(a.exam.date === null) return 1;
+                    if(b.exam.date === null) return -1;
+
+                    const aFinished = a.exam.daysUntil < 0;
+                    const bFinished = b.exam.daysUntil < 0;
+                    if(aFinished !== bFinished) return aFinished ? 1 : -1;
+
+                    if(!aFinished && !bFinished){
+                        if(a.exam.daysUntil !== b.exam.daysUntil) return a.exam.daysUntil - b.exam.daysUntil;
+                    }
+                    if(aFinished && bFinished){
+                        if(a.exam.date.getTime() !== b.exam.date.getTime()) return a.exam.date.getTime() - b.exam.date.getTime();
+                    }
+
+                    const idResult = compareId(a.student.id, b.student.id);
+                    if(idResult !== 0) return idResult;
+                    return a.exam.originalIndex - b.exam.originalIndex;
+                });
+            } else if(sortType === "exam-desc"){
+                rows.sort(function(a,b){
+                    if(a.exam === null && b.exam === null) return compareId(a.student.id, b.student.id);
+                    if(a.exam === null) return 1;
+                    if(b.exam === null) return -1;
+                    if(a.exam.date === null && b.exam.date === null) return a.exam.originalIndex - b.exam.originalIndex;
+                    if(a.exam.date === null) return 1;
+                    if(b.exam.date === null) return -1;
+
+                    const aFinished = a.exam.daysUntil < 0;
+                    const bFinished = b.exam.daysUntil < 0;
+                    if(aFinished !== bFinished) return aFinished ? 1 : -1;
+
+                    if(!aFinished && !bFinished){
+                        if(a.exam.daysUntil !== b.exam.daysUntil) return b.exam.daysUntil - a.exam.daysUntil;
+                    }
+                    if(aFinished && bFinished){
+                        if(a.exam.date.getTime() !== b.exam.date.getTime()) return a.exam.date.getTime() - b.exam.date.getTime();
+                    }
+
+                    const idResult = compareId(a.student.id, b.student.id);
+                    if(idResult !== 0) return idResult;
+                    return a.exam.originalIndex - b.exam.originalIndex;
+                });
+            }
+
+            rows.forEach(function(row){
+                const student = row.student;
+                const exam = row.exam;
+                const tr = document.createElement("tr");
+
+                const examTd = document.createElement("td");
+                examTd.className = "exam-date-cell";
+
+                if(exam === null){
+                    examTd.textContent = "未設定";
+                } else if(exam.date === null){
+                    examTd.textContent = exam.text;
+                } else if(exam.daysUntil < 0){
+                    examTd.className = "exam-date-cell exam-finished";
+                    examTd.textContent = exam.text + " ✅";
+                } else {
+                    examTd.className = "exam-date-cell exam-active";
+                    examTd.textContent = exam.text;
+                }
+
+                const nameTd = document.createElement("td");
+                nameTd.className = "student-cell";
+                const studentLink = document.createElement("span");
+                studentLink.className = "student-link";
+                studentLink.textContent = student.name + " " + student.id;
+                studentLink.onclick = function(){
+                    showHistory(student.id, student.name + " " + student.id);
+                };
+                nameTd.appendChild(studentLink);
+
+                const countTd = document.createElement("td");
+                countTd.className = "count-cell";
+                countTd.textContent = student.count + "回";
+
+                tr.appendChild(examTd);
+                tr.appendChild(nameTd);
+                tr.appendChild(countTd);
+                tbody.appendChild(tr);
+            });
         }
 
-        // ----------------------------------------------------
-        // 詳細履歴表示
-        // ----------------------------------------------------
-        async function showHistory(studentId, displayName) {
+        function compareId(a, b){
+            const matchA = String(a).match(/(\d+)[a-zA-Z](\d+)/);
+            const matchB = String(b).match(/(\d+)[a-zA-Z](\d+)/);
+
+            if(!matchA || !matchB){
+                return String(a).localeCompare(String(b), "ja");
+            }
+
+            const yearA = Number(matchA[1]);
+            const yearB = Number(matchB[1]);
+            if(yearA !== yearB) return yearA - yearB;
+
+            const letterA = matchA[0].replace(matchA[1], "").replace(matchA[2], "");
+            const letterB = matchB[0].replace(matchB[1], "").replace(matchB[2], "");
+            if(letterA !== letterB) return letterA.localeCompare(letterB);
+
+            const numberA = Number(matchA[2]);
+            const numberB = Number(matchB[2]);
+            return numberA - numberB;
+        }
+
+        async function showHistory(studentId, displayName){
             const historyArea = document.getElementById("historyArea");
-            historyArea.innerHTML = `<p class="text-slate-500 animate-pulse">履歴を取得中...</p>`;
+            historyArea.innerHTML = "<p>読み込み中...</p>";
 
             try {
-                const res = await fetch(GAS_WEB_APP_URL + "?mode=history&studentId=" + encodeURIComponent(studentId));
-                const data = await res.json();
+                const response = await fetch(GAS_URL + "?mode=history&studentId=" + encodeURIComponent(studentId));
+                const data = await response.json();
 
-                if (!data || data.length === 0) {
-                    historyArea.innerHTML = `
-                        <div class="space-y-1">
-                            <p class="font-bold text-slate-800">${displayName}</p>
-                            <p class="text-slate-400">面接練習の記録はまだありません。</p>
-                        </div>
-                    `;
+                if(!data || data.length === 0){
+                    historyArea.innerHTML = "<h2>" + displayName + " の面接履歴</h2><p>面接履歴はありません。</p>";
                     return;
                 }
 
-                let html = `
-                    <div class="space-y-2">
-                        <p class="font-bold text-slate-800 border-b border-slate-200 pb-1">${displayName}</p>
-                        <div class="space-y-1.5 max-h-[350px] overflow-y-auto pr-1">
-                `;
+                let html = "<h2>" + displayName + " の面接履歴</h2>";
+                html += "<table class='app2-table'>";
+                html += "<thead><tr><th>回数</th><th>日時</th><th>担当先生</th></tr></thead><tbody>";
 
-                data.forEach((item, index) => {
-                    let dateText = item.datetime || "";
-                    if (dateText) {
-                        const d = new Date(dateText);
-                        if (!isNaN(d.getTime())) {
-                            dateText = d.toLocaleString("ja-JP", { month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit" });
+                data.forEach(function(item, index){
+                    let dateText = item.datetime || item.dateTime || item.timestamp || "";
+                    if(dateText){
+                        const date = new Date(dateText);
+                        if(!isNaN(date.getTime())){
+                            dateText = date.toLocaleString("ja-JP");
                         }
                     }
-                    html += `
-                        <div class="bg-white p-2 rounded-lg border border-slate-200 flex justify-between items-center text-xs shadow-sm">
-                            <span class="font-bold text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded">第${index + 1}回</span>
-                            <span class="text-slate-600">${dateText}</span>
-                            <span class="font-bold text-slate-800">${item.teacher} 先生</span>
-                        </div>
-                    `;
+                    const teacher = item.teacher || item.teacherName || "";
+                    html += "<tr><td>" + (index + 1) + "回目</td><td>" + dateText + "</td><td>" + teacher + "</td></tr>";
                 });
 
-                html += `</div></div>`;
+                html += "</tbody></table>";
                 historyArea.innerHTML = html;
-            } catch (err) {
-                historyArea.innerHTML = `<p class="text-red-500">履歴の取得に失敗しました。</p>`;
+            } catch(error) {
+                console.error(error);
+                historyArea.innerHTML = "<p>履歴の取得に失敗しました。</p>";
             }
         }
 
-        function refreshData() {
+        function refreshData(){
             document.getElementById("updateTime").textContent = "更新中...";
             loadSummary();
         }
